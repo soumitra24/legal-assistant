@@ -1,16 +1,22 @@
 "use client";
 import { signIn, getSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Scale, Zap } from "lucide-react";
+import { Scale, Zap, Mail, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "../../contexts/ThemeContext";
 import ThemeToggle from "../../components/ThemeToggle";
 
 export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -20,20 +26,70 @@ export default function SignIn() {
         router.push('/');
       }
     });
-  }, [router]);
+
+    // Check for success message
+    const message = searchParams.get('message');
+    if (message === 'Account created successfully') {
+      setError(null);
+    }
+  }, [router, searchParams]);
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
+    setError(null);
     try {
       await signIn('google', { callbackUrl: '/' });
     } catch (error) {
       console.error('Sign in error:', error);
+      setError('Failed to sign in with Google');
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log('Attempting sign in with:', { email: form.email });
+      
+      const result = await signIn('credentials', {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+
+      console.log('Sign in result:', result);
+
+      if (result?.error) {
+        setError('Invalid email or password');
+      } else if (result?.ok) {
+        console.log('Sign in successful, redirecting...');
+        router.push('/');
+      } else {
+        setError('An unexpected error occurred');
+      }
+    } catch (error) {
+      console.error('Email sign in error:', error);
+      setError('An error occurred during sign in');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
   const isLight = theme === 'light';
+
+  const inputClass = `w-full px-4 py-3 rounded-xl border outline-none transition-all ${
+    isLight
+      ? "bg-orange-50 border-orange-200 text-slate-900 focus:border-orange-400"
+      : "bg-slate-700 border-slate-600 text-slate-100 focus:border-orange-500"
+  }`;
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 ${
@@ -92,16 +148,31 @@ export default function SignIn() {
             </p>
           </div>
 
+          {/* Success Message */}
+          {searchParams.get('message') === 'Account created successfully' && (
+            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 p-3 rounded-lg text-sm text-center mb-6">
+              Account created successfully! You can now sign in.
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 p-3 rounded-lg text-sm text-center mb-6">
+              {error}
+            </div>
+          )}
+
+          {/* Google Sign In */}
           <Button
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            className={`w-full font-medium py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-sm ${
+            disabled={isGoogleLoading || isLoading}
+            className={`w-full font-medium py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-sm mb-6 ${
               isLight 
                 ? 'bg-white border border-slate-300 text-slate-900 hover:bg-slate-50 hover:border-orange-300' 
                 : 'bg-slate-700 border border-slate-600 text-slate-100 hover:bg-slate-600 hover:border-orange-500'
             }`}
           >
-            {isLoading ? (
+            {isGoogleLoading ? (
               <div className={`w-5 h-5 border-2 border-t-transparent rounded-full animate-spin ${
                 isLight ? 'border-orange-400' : 'border-orange-500'
               }`} />
@@ -128,11 +199,79 @@ export default function SignIn() {
             <span className={`font-medium ${
               isLight ? 'text-slate-900' : 'text-slate-100'
             }`}>
-              {isLoading ? 'Signing in...' : 'Continue with Google'}
+              {isGoogleLoading ? 'Signing in...' : 'Continue with Google'}
             </span>
           </Button>
 
+          {/* Divider */}
+          <div className="flex items-center my-6">
+            <div className="flex-grow border-t border-slate-300 dark:border-slate-600" />
+            <span className="mx-3 text-xs text-slate-400">or</span>
+            <div className="flex-grow border-t border-slate-300 dark:border-slate-600" />
+          </div>
+
+          {/* Email Sign In Form */}
+          <form onSubmit={handleEmailSignIn} className="space-y-4">
+            <div className="relative">
+              <input
+                type="email"
+                name="email"
+                placeholder="Email address"
+                value={form.email}
+                onChange={handleChange}
+                required
+                className={inputClass}
+              />
+              <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            </div>
+
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                className={inputClass}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isLoading || isGoogleLoading}
+              className={`w-full py-3 rounded-xl font-medium transition-all ${
+                isLight 
+                  ? "bg-orange-600 hover:bg-orange-700" 
+                  : "bg-blue-600 hover:bg-blue-700"
+              } text-white disabled:opacity-50`}
+            >
+              {isLoading ? "Signing in..." : "Sign in with Email"}
+            </Button>
+          </form>
+
           <p className={`text-xs text-center mt-6 font-light ${
+            isLight ? 'text-slate-500' : 'text-slate-400'
+          }`}>
+            Don't have an account?{" "}
+            <Link
+              href="/auth/signup"
+              className={`underline transition-colors ${
+                isLight ? "hover:text-orange-600" : "hover:text-orange-400"
+              }`}
+            >
+              Sign up
+            </Link>
+          </p>
+
+          <p className={`text-xs text-center mt-2 font-light ${
             isLight ? 'text-slate-500' : 'text-slate-400'
           }`}>
             Privacy-first • Secure • No data sharing
