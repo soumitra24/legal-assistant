@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# optional config files to ignore (uncomment if needed)
+# eslint.config.mjs
+# postcss.config.mjs
