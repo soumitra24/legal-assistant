@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Scale, Menu, X, User, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../contexts/ThemeContext";
@@ -18,11 +18,6 @@ const Header = ({ isChat = false }: HeaderProps) => {
   const [imageError, setImageError] = useState(false);
   const { data: session, status } = useSession();
   const { theme } = useTheme();
-
-  const scrollToSection = (sectionId: string) => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
-    setIsMenuOpen(false);
-  };
 
   const isLight = theme === 'light';
 
@@ -70,7 +65,15 @@ const Header = ({ isChat = false }: HeaderProps) => {
               <div className="flex items-center space-x-2 lg:space-x-3">
                 <div className="flex items-center space-x-2">
                   {session.user?.image && !imageError ? (
-                    <Image src={session.user.image} alt={session.user.name || "User"} width={32} height={32} className={`rounded-full w-6 h-6 lg:w-8 lg:h-8 ${isLight ? 'border border-orange-200' : 'border border-slate-600'}`} onError={() => setImageError(true)} unoptimized />
+                    <Image 
+                      src={session.user.image} 
+                      alt={session.user.name || "User"} 
+                      width={32} 
+                      height={32} 
+                      className={`rounded-full w-6 h-6 lg:w-8 lg:h-8 ${isLight ? 'border border-orange-200' : 'border border-slate-600'}`} 
+                      onError={() => setImageError(true)} 
+                      unoptimized 
+                    />
                   ) : (
                     <div className={`w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center ${isLight ? 'bg-orange-600' : 'bg-blue-600'}`}>
                       <User className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
@@ -113,7 +116,14 @@ const Header = ({ isChat = false }: HeaderProps) => {
             {session && (
               <div className="flex items-center space-x-2">
                 {session.user?.image ? (
-                  <img src={session.user.image} alt={session.user.name || "User"} className="w-6 h-6 rounded-full" />
+                  <Image 
+                    src={session.user.image} 
+                    alt={session.user.name || "User"} 
+                    width={24} 
+                    height={24} 
+                    className="w-6 h-6 rounded-full" 
+                    unoptimized 
+                  />
                 ) : (
                   <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center">
                     <User className="w-3 h-3 text-white" />
@@ -156,7 +166,14 @@ const Header = ({ isChat = false }: HeaderProps) => {
               <div className={`${!isChat ? `pt-3 border-t ${isLight ? 'border-slate-200' : 'border-slate-600'}` : ""}`}>
                 <div className="flex items-center space-x-3 mb-4">
                   {session.user?.image ? (
-                    <img src={session.user.image} alt={session.user.name || "User"} className="w-8 h-8 rounded-full" />
+                    <Image 
+                      src={session.user.image} 
+                      alt={session.user.name || "User"} 
+                      width={32} 
+                      height={32} 
+                      className="w-8 h-8 rounded-full" 
+                      unoptimized 
+                    />
                   ) : (
                     <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
                       <User className="w-4 h-4 text-white" />

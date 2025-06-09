@@ -61,9 +61,16 @@ const Chat = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/chat', {
+      // Use environment variable for API URL with proper fallback
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      
+      console.log('Making request to:', `${apiUrl}/api/chat`); // Debug log
+      
+      const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           message,
           uploaded_files: uploadedFiles.map(file => ({ name: file.name, size: file.size })),
@@ -71,8 +78,13 @@ const Chat = () => {
         }),
       });
 
+      console.log('Response status:', response.status); // Debug log
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to get AI response');
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}: Failed to get AI response`);
+      }
 
       setIsTyping(false);
       setMessages(prev => [...prev, {
@@ -84,12 +96,24 @@ const Chat = () => {
       }]);
 
     } catch (error: any) {
-      console.error("Error:", error);
+      console.error("Chat API Error:", error);
       setIsTyping(false);
+      
+      // Better error handling
+      let errorMessage = "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.";
+      
+      if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+        errorMessage = "Cannot connect to the backend server. Please ensure the backend is running on http://localhost:8000";
+      } else if (error.message.includes('NetworkError')) {
+        errorMessage = "Network error occurred. Please check your connection.";
+      } else if (error.message.includes('CORS')) {
+        errorMessage = "CORS error. Please check backend CORS configuration.";
+      }
+      
       setMessages(prev => [...prev, {
         id: `bot-error-${Date.now()}`,
         role: "bot",
-        content: "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.",
+        content: errorMessage,
         timestamp: new Date().toLocaleTimeString(),
         isAnimating: true
       }]);
