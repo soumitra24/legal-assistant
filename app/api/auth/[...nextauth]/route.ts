@@ -3,13 +3,14 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
+import { NextAuthOptions } from "next-auth";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-export const authOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -75,7 +76,7 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account }: any) {
+    async signIn({ user, account }: { user: any; account: any }) {
       if (account?.provider === "google" && user?.email) {
         try {
           // Handle Google sign-in sync
@@ -98,33 +99,58 @@ export const authOptions = {
           }
 
           return true;
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error during Google sign-in:', error);
           return false;
         }
       }
       return true;
     },
-    async jwt({ token, user }: any) {
+    async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }: any) {
+    async session({ session, token }: { session: any; token: any }) {
       if (token) {
         session.user.id = token.id;
       }
       return session;
     },
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+      // Handle redirects properly for production
+      console.log('Redirect called with:', { url, baseUrl });
+      
+      // If it's a relative URL, make it absolute with baseUrl
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      
+      // If it's the same origin, allow it
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      
+      // For production deployment
+      const productionUrl = process.env.NEXTAUTH_URL;
+      if (productionUrl && url.startsWith(productionUrl)) {
+        return url;
+      }
+      
+      // Default fallback
+      return baseUrl;
+    }
   },
   pages: {
     signIn: "/auth/signin",
-    signUp: "/auth/signup",
+    // Remove signUp as it's not a valid NextAuth page option
+    // signUp: "/auth/signup", // This line causes the error
   },
   session: {
     strategy: "jwt" as const,
   },
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

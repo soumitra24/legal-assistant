@@ -90,7 +90,12 @@ const Header = ({ isChat = false }: HeaderProps) => {
                     </Button>
                   </Link>
                 )}
-                <Button onClick={() => signOut()} variant="outline" size="sm" className={`p-1 lg:p-2 ${isLight ? 'text-slate-600 hover:text-slate-800 border-slate-300' : 'text-slate-400 hover:text-slate-200 border-slate-600'}`}>
+                <Button 
+                  onClick={() => signOut({ callbackUrl: '/' })} 
+                  variant="outline" 
+                  size="sm" 
+                  className={`p-1 lg:p-2 ${isLight ? 'text-slate-600 hover:text-slate-800 border-slate-300' : 'text-slate-400 hover:text-slate-200 border-slate-600'}`}
+                >
                   <LogOut className="w-3 h-3 lg:w-4 lg:h-4" />
                 </Button>
               </div>
@@ -190,7 +195,14 @@ const Header = ({ isChat = false }: HeaderProps) => {
                     </Button>
                   </Link>
                 )}
-                <Button onClick={() => { signOut(); setIsMenuOpen(false); }} variant="outline" className="w-full">
+                <Button 
+                  onClick={() => { 
+                    signOut({ callbackUrl: '/' }); 
+                    setIsMenuOpen(false); 
+                  }} 
+                  variant="outline" 
+                  className="w-full"
+                >
                   Sign Out
                 </Button>
               </div>
