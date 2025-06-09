@@ -1,6 +1,6 @@
 "use client";
 import { signIn, getSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Scale, Zap, Mail, Eye, EyeOff } from "lucide-react";
@@ -8,7 +8,17 @@ import Link from "next/link";
 import { useTheme } from "../../contexts/ThemeContext";
 import ThemeToggle from "../../components/ThemeToggle";
 
-export default function SignIn() {
+// Loading component for Suspense fallback
+function SignInLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+    </div>
+  );
+}
+
+// Main SignIn component that uses useSearchParams
+function SignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
@@ -23,7 +33,7 @@ export default function SignIn() {
     // Check if user is already signed in
     getSession().then((session) => {
       if (session) {
-        router.push('/');
+        router.push('/chat');
       }
     });
 
@@ -38,8 +48,8 @@ export default function SignIn() {
     setIsGoogleLoading(true);
     setError(null);
     try {
-      await signIn('google', { callbackUrl: '/' });
-    } catch (error) {
+      await signIn('google', { callbackUrl: '/chat' });
+    } catch (error: unknown) {
       console.error('Sign in error:', error);
       setError('Failed to sign in with Google');
     } finally {
@@ -67,11 +77,11 @@ export default function SignIn() {
         setError('Invalid email or password');
       } else if (result?.ok) {
         console.log('Sign in successful, redirecting...');
-        router.push('/');
+        router.push('/chat');
       } else {
         setError('An unexpected error occurred');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Email sign in error:', error);
       setError('An error occurred during sign in');
     } finally {
@@ -260,7 +270,7 @@ export default function SignIn() {
           <p className={`text-xs text-center mt-6 font-light ${
             isLight ? 'text-slate-500' : 'text-slate-400'
           }`}>
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href="/auth/signup"
               className={`underline transition-colors ${
@@ -291,5 +301,14 @@ export default function SignIn() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main component wrapped with Suspense
+export default function SignIn() {
+  return (
+    <Suspense fallback={<SignInLoading />}>
+      <SignInForm />
+    </Suspense>
   );
 }

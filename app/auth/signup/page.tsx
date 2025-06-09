@@ -52,8 +52,9 @@ export default function SignUp() {
       if (!res.ok) throw new Error(data.error || "Failed to send OTP");
 
       setStep("verification");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +73,7 @@ export default function SignUp() {
           email: form.email,
           token: otp,
           username: form.username,
-          password: form.password, // Pass the password here
+          password: form.password,
         }),
       });
 
@@ -80,8 +81,43 @@ export default function SignUp() {
       if (!res.ok) throw new Error(data.error || "Invalid OTP");
 
       router.push("/auth/signin?message=Account created successfully");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    try {
+      await signIn("google", { callbackUrl: "/chat" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Google sign up failed';
+      setError(errorMessage);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send OTP");
+      
+      // Optional: Show success message
+      setError(null);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend OTP';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -251,7 +287,7 @@ export default function SignUp() {
 
               {/* Google Sign Up */}
               <Button
-                onClick={() => signIn("google", { callbackUrl: "/" })}
+                onClick={handleGoogleSignUp}
                 disabled={isLoading}
                 className={`w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all ${
                   isLight
@@ -341,7 +377,7 @@ export default function SignUp() {
               {/* Resend OTP */}
               <div className="text-center mt-4">
                 <button
-                  onClick={() => handleSendOTP({ preventDefault: () => {} } as React.FormEvent)}
+                  onClick={handleResendOTP}
                   disabled={isLoading}
                   className={`text-xs transition-colors ${
                     isLight 
@@ -349,7 +385,7 @@ export default function SignUp() {
                       : "text-slate-400 hover:text-orange-400"
                   } disabled:opacity-50`}
                 >
-                  Didn't receive code? Resend
+                  Didn&apos;t receive code? Resend
                 </button>
               </div>
             </>
